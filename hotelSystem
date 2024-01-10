@@ -1,0 +1,207 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
+import java.util.Scanner;
+
+public class HRS {
+
+        private static final String URL = "jdbc:mysql://localhost:3306/hoteldb";
+        private static final String username = "root";
+        private static final String password = "vasu1234@@";
+        public static void main(String[] args) throws InterruptedException{
+           try{
+               Connection conn = DriverManager.getConnection(URL,username,password);
+              while(true){
+                  Scanner scn = new Scanner(System.in);
+                  System.out.println("+--------------------------+");
+                  System.out.println("| HOTEL RESERVATION SYSTEM |");
+                  System.out.println("+--------------------------+");
+                  System.out.println("| 1. Reserve a room        |");
+                  System.out.println("| 2. View reservation      |");
+                  System.out.println("| 3. For update reservation|");
+                  System.out.println("| 4. For deletion          |");
+                  System.out.println("| 5. Exit                  |");
+                  System.out.println("+--------------------------+");
+                  System.out.println("|----Choose and option---- |");
+                  int choice = scn.nextInt();
+                  switch (choice){
+                      case 1:
+                          reserveRoom(conn,scn);
+                          break;
+                      case 2:
+                          viewReservation(conn);
+                          break;
+                      case 3:
+                          updateReservation(conn,scn);
+                          break;
+                      case 4:
+                          deleteReservation(conn,scn);
+                          break;
+                      case 5:
+                          exit();
+                  }
+              }
+
+           }
+           catch(SQLException e)
+           {
+               System.out.println(e.getMessage());
+           }
+        }
+
+    private static void deleteReservation(Connection conn,Scanner scn) {
+            try{
+                System.out.println("Enter the reservation id");
+                int id  = scn.nextInt();
+
+                if(!reservationExists(conn,id)){
+                    System.out.println("reservation not found!! can't delete data!!");
+                    return;
+                }
+
+                String Q = "DELETE FROM reservations WHERE res_id = " + id;
+
+                try(Statement st = conn.createStatement()){
+                    int affectedRows = st.executeUpdate(Q);
+
+                    if(affectedRows>0){
+                        System.out.println("reservation deleted successfully!");
+                    }else{
+                        System.out.println("reservation not found");
+                    }
+                }
+            }
+            catch(Exception e){
+                e.getMessage();
+            }
+    }
+
+    private static void updateReservation(Connection conn, Scanner scn) {
+        try{
+            System.out.println("enter ReservationID");
+            int id = scn.nextInt();
+
+            if(!reservationExists(conn,id)){
+                System.out.println("reservation not found !!");
+                return;
+            }
+            System.out.println("Enter the guest name");
+            String new_guestName = scn.next();
+            System.out.println("Enter room number");
+            int new_room_no = scn.nextInt();
+            System.out.println("Enter the contact number");
+            String new_contact_no = scn.next();
+
+            String Q =  " UPDATE reservations SET guest_name = '" + new_guestName + "' , "  +
+                        " room_no = " + new_room_no + " , " +
+                        " contact_no = '"  + new_contact_no + " ' " +
+                        " WHERE res_id = " + id;
+            try (Statement st = conn.createStatement()) {
+                int affectedRows = st.executeUpdate(Q);
+
+                if(affectedRows>0){
+                    System.out.println("Reservation Update!!");
+                }else{
+                    System.out.println("reservation can not update!!");
+                }
+
+            }catch(Exception e){
+                e.getMessage();
+            }
+
+
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private static boolean reservationExists(Connection conn, int id) {
+            try{
+                String Q = "SELECT res_id FROM reservations WHERE res_id = " + id;
+
+                try(Statement st = conn.createStatement();
+                    ResultSet rs = st.executeQuery(Q)){
+
+                    return rs.next();
+                }
+            }
+            catch(Exception e){
+                e.getMessage();
+                return false;
+            }
+    }
+
+
+    private static void viewReservation(Connection conn) throws SQLException {
+        String Q = "SELECT * from reservations;";
+        try {
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery(Q);
+
+            System.out.println("Current Reservations :");
+            System.out.println("+----------------+----------------+----------------+----------------------+-------------------------+");
+            System.out.println("| Reservation ID | Guest          | Room Number    | Contact Number       |      Date               |");
+            System.out.println("+----------------+----------------+----------------+----------------------+-------------------------+");
+
+            while(rs.next()) {
+                int ReservationID = rs.getInt("res_id");
+                String name = rs.getString("guest_name");
+                int roomNumber = rs.getInt("room_no");
+                String contactNumber = rs.getString("contact_no");
+                String date = rs.getTimestamp("reservation_date").toString();
+
+                System.out.printf("| %-14d | %-15s | %-13d | %-20s | %-19s   |\n",
+                        ReservationID , name , roomNumber , contactNumber , date);
+            }
+
+            System.out.println("+----------------+----------------+----------------+----------------------+-------------------------+");
+        } catch(SQLException e){
+            System.out.println(e.getMessage());
+        }
+
+    }
+
+    private static void reserveRoom(Connection conn, Scanner scn) throws SQLException{
+        System.out.println("Enter the guest name");
+        String guestName = scn.next();
+        scn.nextLine();
+        System.out.println("Enter room number");
+        int room_no = scn.nextInt();
+        System.out.println("Enter the contact number");
+        String contact_no = scn.next();
+
+        String Q = "INSERT INTO reservations (guest_name, room_no, contact_no)" +
+                "VALUES('" + guestName + "', " + room_no + ",'" + contact_no + "')";
+
+        try{
+            Statement st = conn.createStatement();
+            int affectedRows = st.executeUpdate(Q);
+
+            if(affectedRows>0){
+                System.out.println("Reservation Successful!!");
+            }else{
+                System.out.println("Reservation Failed!!");
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e.getMessage());
+        }
+        catch(RuntimeException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void exit() throws InterruptedException{
+        System.out.print("Exiting System");
+        int i = 5;
+        while(i!=0) {
+            System.out.print(".");
+            Thread.sleep(700);
+            i--;
+        }
+        System.out.println();
+        System.exit(0);
+    }
+}
